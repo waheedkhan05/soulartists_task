@@ -14,6 +14,7 @@ class BookingDetailItem(scrapy.Item):
     hotel_desc_title = scrapy.Field()
     hotel_desc_detail = scrapy.Field()
     hotel_desc_summary = scrapy.Field()
+    facilities = scrapy.Field()
     landmarks_nearby = scrapy.Field()
     hotel_most_popular_facilities = scrapy.Field()
     restaurants_and_markets = scrapy.Field()

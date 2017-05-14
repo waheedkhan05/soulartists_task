@@ -29,16 +29,29 @@ class BookingSpider(scrapy.Spider):
         hotel_desc_summary = response.xpath('//div[@id="summary"]//p/text()').extract()
         hotel_desc_detail = response.xpath('//div[@class="hp_hotel_description_hightlights_wrapper   "]//p/text()').extract()
         hotel_most_popular_facilities = response.xpath('//div[@class="hp_hotel_description_hightlights_wrapper   "]//div[@class="important_facility hp-desc-facility "]/text()').extract()
+        facilities_xpath = response.xpath('//div[@id="hp_facilities_box"]/div[@class="facilitiesChecklist"]/div')
         landmarks = response.xpath('//div[@class="hp-poi-content-container clearfix hp-poi-content-container--column"]//div[@class="hp-poi-content-section popular-landmarks"]/ul/li/span[@class="poi-list-item__title"]/text()').extract()
         restaurants_and_markets = response.xpath('//div[@class="hp-poi-content-container clearfix hp-poi-content-container--column"]//div[@class="hp-poi-content-section hp-surroundings-category hp-surroundings-category_num-1"]/ul/li/span/span[@class="poi-list-item__name"]/text()').extract()
         natural_beauties = response.xpath('//div[@class="hp-poi-content-container clearfix hp-poi-content-container--column"]//div[@class="hp-poi-content-section hp-surroundings-category hp-surroundings-category_num-2"]/ul/li/span/span[@class="poi-list-item__name"]/text()').extract()
         airports = response.xpath('//div[@class="hp-poi-content-container clearfix hp-poi-content-container--column"]//div[@class="hp-poi-content-section hp-surroundings-category hp-surroundings-category_num-3"]//ul/li/span[@class="poi-list-item__title"]/text()').extract()
-        
+        scoreword = response.xpath('//div[@id="photo_wrapper"]//a[@class="big_review_score_detailed js-big_review_score_detailed ind_rev_total hp_review_score js-hotel-review-score"]/span/text()').extract()
+        score = response.xpath('//div[@id="photo_wrapper"]//a[@class="big_review_score_detailed js-big_review_score_detailed ind_rev_total hp_review_score js-hotel-review-score"]/span/span[@class="average js--hp-scorecard-scoreval"]/text()').extract()
+        score_out_of = response.xpath('//div[@id="photo_wrapper"]//a[@class="big_review_score_detailed js-big_review_score_detailed ind_rev_total hp_review_score js-hotel-review-score"]/span/span[@class="out_of"]/span/text()').extract()
         item = BookingDetailItem()
+        # store facilities as dictionary, as facilities_dict['Facility Title'] = ['','']
+        facilities_dict = {}
+        facilities_xpath = response.xpath('//div[@id="hp_facilities_box"]/div[@class="facilitiesChecklist"]/div')
+        for facility in facilities_xpath:
+            titles = [tit.replace('\n') for tit in facility.xpath('h5/text()') if len(tit)>1]
+            facs = [f.replace('\n') for f in facility.xpath('ul/li/span/text()') if len(f)>1]
+            facilities_xpath["".join(titles)] = facs
+        if facilities_dict:
+            item['facilities'] = unicode(facilities_dict)
         if hotel_name:
             item['hotel_name'] = ''.join(e.replace('\n','') for e in hotel_name) 
         if hotel_address:
             item['hotel_address'] = ''.join(e.replace('\n','') for e in hotel_address) 
+            re.match('^.*(?P<zipcode>\d{5}).*$', address).groupdict()['zipcode']
         if hotel_desc_title:
             item['hotel_desc_title'] = ''.join(e.replace('\n','') for e in hotel_desc_title)
         if hotel_desc_detail:
