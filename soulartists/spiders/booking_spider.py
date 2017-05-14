@@ -4,9 +4,10 @@ from soulartists.items import BookingDetailItem
 
 class BookingSpider(scrapy.Spider):
     name = "booking"
+    destination_id = '38833'
     start_urls = [
         # Adding the start url for Marakesh from booking.com
-	"https://www.booking.com/searchresults.html?label=gen173nr-1DCAooggJCAlhYSDNiBW5vcmVmaAKIAQGYATHCAQN4MTHIAQzYAQPoAQH4AQKSAgF5qAID;sid=4c399253f9275f4758931bfd757c0c76;city=-38833"
+	"https://www.booking.com/searchresults.html?label=gen173nr-1DCAooggJCAlhYSDNiBW5vcmVmaAKIAQGYATHCAQN4MTHIAQzYAQPoAQH4AQKSAgF5qAID;sid=4c399253f9275f4758931bfd757c0c76;checkin=2017-05-15;checkout=2017-05-16;city=-38833"
     ]
 
     pageNumber = 1
@@ -37,21 +38,30 @@ class BookingSpider(scrapy.Spider):
         scoreword = response.xpath('//div[@id="photo_wrapper"]//a[@class="big_review_score_detailed js-big_review_score_detailed ind_rev_total hp_review_score js-hotel-review-score"]/span/text()').extract()
         score = response.xpath('//div[@id="photo_wrapper"]//a[@class="big_review_score_detailed js-big_review_score_detailed ind_rev_total hp_review_score js-hotel-review-score"]/span/span[@class="average js--hp-scorecard-scoreval"]/text()').extract()
         score_out_of = response.xpath('//div[@id="photo_wrapper"]//a[@class="big_review_score_detailed js-big_review_score_detailed ind_rev_total hp_review_score js-hotel-review-score"]/span/span[@class="out_of"]/span/text()').extract()
+        
         item = BookingDetailItem()
         # store facilities as dictionary, as facilities_dict['Facility Title'] = ['','']
         facilities_dict = {}
         facilities_xpath = response.xpath('//div[@id="hp_facilities_box"]/div[@class="facilitiesChecklist"]/div')
         for facility in facilities_xpath:
-            titles = [tit.replace('\n') for tit in facility.xpath('h5/text()') if len(tit)>1]
-            facs = [f.replace('\n') for f in facility.xpath('ul/li/span/text()') if len(f)>1]
-            facilities_xpath["".join(titles)] = facs
+            titles = [tit.replace('\n','') for tit in facility.xpath('h5/text()').extract() if len(tit)>1]
+            facs = [f.replace('\n','') for f in facility.xpath('ul/li/span/text()').extract() if len(f)>1]
+            facilities_dict["".join(titles)] = facs
+        if score:
+            item['score'] = "".join([tit.replace('\n','') for tit in score])
+        if scoreword:
+            item['score_word'] = "".join([tit.replace('\n','') for tit in scoreword])
         if facilities_dict:
             item['facilities'] = unicode(facilities_dict)
         if hotel_name:
             item['hotel_name'] = ''.join(e.replace('\n','') for e in hotel_name) 
         if hotel_address:
             item['hotel_address'] = ''.join(e.replace('\n','') for e in hotel_address) 
-            re.match('^.*(?P<zipcode>\d{5}).*$', address).groupdict()['zipcode']
+            import re
+            zipcode = re.match('^.*(?P<zipcode>\d{5}).*$', item['hotel_address']).groupdict()['zipcode']
+            if zipcode:
+                item['zipcode'] = zipcode
+        item['destination_id'] = '38833'
         if hotel_desc_title:
             item['hotel_desc_title'] = ''.join(e.replace('\n','') for e in hotel_desc_title)
         if hotel_desc_detail:
